@@ -7,7 +7,6 @@
 <title>Insert title here</title>
 </head>
 <body>
-
-Hello this is my first jsp after index.jsp
+ ${ test }
 </body>
 </html>
