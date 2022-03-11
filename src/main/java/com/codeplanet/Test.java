@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.SplittableRandom;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -30,27 +31,45 @@ public class Test {
 	String psw = req.getParameter("psw");
 	Class.forName("com.mysql.jdbc.Driver");
 	Connection con= DriverManager.getConnection("jdbc:mysql://localhost:3306/world", "root", "admin123");
-	Statement stmt = con.createStatement();
-	String query1 = "Select * from signup where email='"+ email + "'";
-	ResultSet rs = stmt.executeQuery(query1);
+	String query1 = "Select * from signup where email=?";
+	PreparedStatement stmt = con.prepareStatement(query1);
+	stmt.setString(1,email);
+	ResultSet rs = stmt.executeQuery();
 	if (rs.next()) {
 		req.setAttribute("test", "You are already signedup");
 	} else {
-	  String query2 = "insert into signup(EMAIL,PSW) values('"+email+ "','"+ psw + "')";
-	  int row = stmt.executeUpdate(query2);
+	  String otp= "";
+	  otp = generateOtp(6);
+	  System.out.println("your otp is " + otp);
+	  String query2 = "insert into signup(EMAIL,PSW, otp) values(?,?,?)";
+	  PreparedStatement stmt1 = con.prepareStatement(query2);
+	  stmt1.setString(1,email);
+	  stmt1.setString(2, psw);
+	  stmt1.setString(3, otp);
+	  int row = stmt1.executeUpdate();
 	  if (row >=1) {
-		req.setAttribute("test", "You signedup successfully");
+		req.setAttribute("email", email);
 	  }
 	}
 	
-	return "First";
+	return "SignupSuccess";
   }
 
-  @GetMapping("/login")
+  public String generateOtp(int size) {
+	StringBuilder sb = new StringBuilder();
+	SplittableRandom sp = new SplittableRandom();
+	 for (int i =0 ; i<size; i++) {
+		 int rn = sp.nextInt(0,9);
+		 sb.append(rn);
+	 }
+	return sb.toString();
+  }
+
+@GetMapping("/login")
   public String login(HttpServletRequest req) {
     return "login";
   }
-  
+ 
   @PostMapping("/signin")
   public String signin(HttpServletRequest req) throws SQLException, ClassNotFoundException {
 	String email = req.getParameter("email");
@@ -76,4 +95,30 @@ public class Test {
 	
 	return "First";
   }
+
+@PostMapping("/otpVerification")
+public String otpVerification(HttpServletRequest req) throws SQLException, ClassNotFoundException {
+	
+		String email = req.getParameter("email");
+		String otp = req.getParameter("otp");
+		Class.forName("com.mysql.jdbc.Driver");
+		Connection con= DriverManager.getConnection("jdbc:mysql://localhost:3306/world", "root", "admin123");
+		Statement stmt = con.createStatement();
+		String query1 = "Select otp from signup where email='"+ email + "'";
+		ResultSet rs = stmt.executeQuery(query1);
+		if(rs.next()) {
+			if(rs.getString("otp").equals(otp)) {
+				Statement stmt1 = con.createStatement();
+				String query2 = "update signup set is_verify=1 where email='"+ email + "'";
+				stmt1.executeUpdate(query2);
+				req.setAttribute("test", "Your account is verified now");
+			} else {
+				req.setAttribute("test", "Your otp is not valid");
+			}
+		} else {
+			req.setAttribute("test", "Your otp is not generated");
+			
+		}
+		return "First";
+		}
 }
