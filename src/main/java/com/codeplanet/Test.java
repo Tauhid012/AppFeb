@@ -6,12 +6,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 import java.util.SplittableRandom;
 
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
@@ -48,6 +56,7 @@ public class Test {
 	  stmt1.setString(3, otp);
 	  int row = stmt1.executeUpdate();
 	  if (row >=1) {
+		sendMail(email, "Youyr Otp for our Portal is " + otp, "OTP for Verification");
 		req.setAttribute("email", email);
 	  }
 	}
@@ -55,7 +64,47 @@ public class Test {
 	return "SignupSuccess";
   }
 
-  public String generateOtp(int size) {
+  private static void sendMail(String emailTo, String body, String subject) {
+    Properties p = new Properties();
+	p.put("mail.smtp.host", "smtp.gmail.com");
+	p.put("mail.smtp.port", "465");
+	p.put("mail.smtp.ssl.enable", "true");
+	p.put("mail.smtp.auth", "true");
+	
+	
+	MailAuthenticator m = new MailAuthenticator("testcodeplanet@gmail.com", "9806584240");
+	
+	Session session = Session.getInstance(p, m);
+	session.setDebug(true);
+	
+	MimeMessage msg = new MimeMessage(session);
+	
+	try {
+		msg.setFrom("testcodeplanet@gmail.com");
+		
+		msg.addRecipient(Message.RecipientType.TO, new InternetAddress(emailTo));
+		
+		msg.setSubject(subject);
+		
+		msg.setText(body);
+		
+		Transport.send(msg);
+		
+	} catch (MessagingException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+  }
+
+public String generateOtp(int size) {
 	StringBuilder sb = new StringBuilder();
 	SplittableRandom sp = new SplittableRandom();
 	 for (int i =0 ; i<size; i++) {
