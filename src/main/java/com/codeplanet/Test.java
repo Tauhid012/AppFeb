@@ -1,5 +1,6 @@
 package com.codeplanet;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -21,6 +22,8 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +32,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Controller
 public class Test {
 
+  @Autowired
+  JdbcTemplate jdbcTemplate;
+  
   @GetMapping("/signUp")
   public String signUp(HttpServletRequest req) {
 	String email = req.getParameter("email");
@@ -41,8 +47,8 @@ public class Test {
   public String signUp1(HttpServletRequest req) throws SQLException, ClassNotFoundException {
 	String email = req.getParameter("email");
 	String psw = req.getParameter("psw");
-	Class.forName("com.mysql.jdbc.Driver");
-	Connection con= DriverManager.getConnection("jdbc:mysql://localhost:3306/world", "root", "admin123");
+	
+	Connection con= jdbcTemplate.getDataSource().getConnection();
 	String query1 = "Select * from signup where email=?";
 	PreparedStatement stmt = con.prepareStatement(query1);
 	stmt.setString(1,email);
@@ -110,11 +116,10 @@ public class Test {
   public String signin(HttpServletRequest req) throws SQLException, ClassNotFoundException {
 	String email = req.getParameter("email");
 	String psw = req.getParameter("psw");
-	Class.forName("com.mysql.jdbc.Driver");
-	Connection con= DriverManager.getConnection("jdbc:mysql://localhost:3306/world", "root", "admin123");
-	Statement stmt = con.createStatement();
-	String query1 = "Select * from signup where email='"+ email + "'";
-	ResultSet rs = stmt.executeQuery(query1);
+	Connection con= jdbcTemplate.getDataSource().getConnection();	
+	CallableStatement stmt = con.prepareCall("call signin(?)");
+	stmt.setString(1, email);
+	ResultSet rs = stmt.executeQuery();
 	if (rs.next()) {
 	   if(rs.getInt("is_verify") == 0) {
 		   req.setAttribute("test", "You are not verified");
